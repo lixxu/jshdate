@@ -3,6 +3,7 @@
 
 from __future__ import unicode_literals
 from datetime import datetime, timedelta
+from datetime.parser import parse
 
 ONE_DAY = timedelta(days=1)
 ONE_HOUR = timedelta(hours=1)
@@ -15,6 +16,17 @@ FOLDER_DAY_FMT = '%Y%m%d'
 
 # folder name format for hour
 FOLDER_HOUR_FMT = '%Y%m%d%H'
+QUARTERS = ['Q1 (Nov ~ Jan)', 'Q2 (Feb ~ Apr)', 'Q3 (May ~ Jul)',
+            'Q4 (Aug ~ Oct)']
+MONTHS = ['Nov', 'Dec', 'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug',
+          'Sep', 'Oct']
+MONTH_DAYS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
+              'Oct', 'Nov', 'Dec']
+QUARTER_MONTHS = [['Nov', 'Dec', 'Jan'],
+                  ['Feb', 'Mar', 'Apr'],
+                  ['May', 'Jun', 'Jul'],
+                  ['Aug', 'Sep', 'Oct'],
+                  ]
 
 
 class JshDate(object):
@@ -38,6 +50,20 @@ class JshDate(object):
 
         return 4
 
+    def get_year_chart_ticks(self, seqs=[], kind='quarter', **kwargs):
+        if kind == 'quarter':
+            return [QUARTERS[i] for i, _ in enumerate(seqs)]
+
+        year = kwargs['year']
+        ticks = []
+        for i, _ in enumerate(seqs):
+            if i == 2:
+                ticks.append('{}-Jan'.format(year))
+            else:
+                ticks.append(MONTHS[i])
+
+        return ticks
+
     def get_year_ticks(self, year, month=0, quarter=0):
         # Month view and Quarter View
         # Nov, Dec, Jan, ..., Oct
@@ -46,7 +72,7 @@ class JshDate(object):
         now = datetime.now()
         now_str = now.strftime('%Y%m')
         y_str = '{}'.format(year)
-        year_ticks = []
+        month_ticks = []
         qt_ticks = []
         if month:
             if '{}{:02}'.format(year, month) > now_str:
@@ -64,7 +90,7 @@ class JshDate(object):
             else:
                 return [], []
 
-            year_ticks.append((ts1, ts2, month))
+            month_ticks.append((ts1, ts2, month))
 
         if quarter:
             if quarter == 1 and year <= now.year:
@@ -87,19 +113,19 @@ class JshDate(object):
         if not (month or quarter):
             now_str = now.strftime('%Y-%m-%d 06:00:00')
             last_year = year - 1
-            year_ticks = [(self.month_fmt.format(last_year, 11),
+            month_ticks = [(self.month_fmt.format(last_year, 11),
                            self.month_fmt.format(last_year, 12),
                            11),
-                          (self.month_fmt.format(last_year, 12),
+                           (self.month_fmt.format(last_year, 12),
                            self.month_fmt.format(year, 1),
                            12),
-                          ]
+                           ]
 
             for i in range(1, 11):
                 if now_str < self.month_fmt.format(year, i):
                     break
 
-                year_ticks.append((self.month_fmt.format(year, i),
+                month_ticks.append((self.month_fmt.format(year, i),
                                    self.month_fmt.format(year, i + 1),
                                    i))
 
@@ -114,7 +140,10 @@ class JshDate(object):
                                  self.month_fmt.format(year, q + 3),
                                  i + 2))
 
-        return year_ticks, qt_ticks
+        return month_ticks, qt_ticks
+
+    def get_quarter_chart_ticks(self, quarter):
+        return QUARTER_MONTHS[int(quarter) - 1]
 
     def get_quarter_ticks(self, year, quarter):
         # Q1: Nov ~ Jan, Q2: Feb ~ Apr
@@ -151,6 +180,10 @@ class JshDate(object):
 
         return ticks
 
+    def get_month_day_chart_ticks(self, month, days=0):
+        prefix = '{}-'.format(MONTH_DAYS[int(month) - 1])
+        return ['{}{:02}'.format(prefix, i) for i in range(1, days + 1)]
+
     def get_month_day_ticks(self, year, month):
         ticks = []
         dt = datetime(year, month, 1)
@@ -171,6 +204,9 @@ class JshDate(object):
 
         return ticks
 
+    def get_week_chart_ticks(self, days=[]):
+        return [parse(d).strftime('%b-%d') for d in days]
+
     def get_week_ticks(self, year, week):
         ticks = []
         dt = datetime(year, 1, 1) + timedelta(weeks=week) - ONE_DAY
@@ -185,6 +221,17 @@ class JshDate(object):
                           (dt + ONE_DAY).strftime(self.day_fmt),
                           dt.strftime(self.folder_day_fmt)))
             dt += ONE_DAY
+
+        return ticks
+
+    def get_day_chart_ticks(self, hours=[]):
+        ticks = []
+        for hour in hours:
+            dt = parse(hour)
+            if dt.hour == 0:
+                ticks.append(dt.strftime('%b-%m 00:00'))
+            else:
+                ticks.append(dt.strftime('%H:00'))
 
         return ticks
 
