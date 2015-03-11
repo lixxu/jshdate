@@ -59,15 +59,7 @@ class JshDate(object):
         if kind == 'quarter':
             return [QUARTERS[i] for i, _ in enumerate(seqs)]
 
-        ticks = []
-        for d in seqs:
-            dt = parse(d[0])
-            if dt.month == 1:
-                ticks.append(dt.strftime('%Y-%b'))
-            else:
-                ticks.append(dt.strftime('%b'))
-
-        return ticks
+        return [parse(seq[0]).strftime('%Y-%b') for seq in seqs]
 
     def get_year_ticks(self, year, month=0, quarter=0):
         # Month view and Quarter View
@@ -149,7 +141,7 @@ class JshDate(object):
         return month_ticks, qt_ticks
 
     def get_quarter_chart_ticks(self, seqs):
-        return [MONTH_NAMES[qt[-1] - 1] for qt in seqs]
+        return [parse(seq[0]).strftime('%Y-%b')for seq in seqs]
 
     def get_quarter_ticks(self, year, quarter):
         # Q1: Nov ~ Jan, Q2: Feb ~ Apr
@@ -222,7 +214,7 @@ class JshDate(object):
         return ticks
 
     def get_week_chart_ticks(self, days=[]):
-        return [parse(d[0]).strftime('%b-%d') for d in days]
+        return [parse(d[0]).strftime('%Y-%b-%d') for d in days]
 
     def get_week_ticks(self, year, week):
         ticks = []
