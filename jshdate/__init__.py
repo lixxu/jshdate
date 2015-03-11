@@ -251,9 +251,11 @@ class JshDate(object):
             day = parse(day)
 
         day = day.replace(hour=6)
-        hour_str = datetime.now().strftime(self.folder_hour_fmt)
+        now = datetime.now()
+        fmt = '{}{:>02}'.format(self.folder_hour_fmt, self.shift_minute)
+        hour_str = now.strftime('{}%M'.format(self.folder_hour_fmt))
         for h in range(24):
-            if day.strftime(self.folder_hour_fmt) > hour_str:
+            if day.strftime(fmt) > hour_str:
                 break
 
             ticks.append((day.strftime(self.hour_fmt),
