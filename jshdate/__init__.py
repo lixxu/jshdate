@@ -1,44 +1,69 @@
 #!/usr/bin/env python
-#-*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 
 from __future__ import unicode_literals
+import calendar
 from datetime import datetime, timedelta
+
+import six
 from dateutil.parser import parse
+
+__version__ = "0.3.0"
 
 ONE_DAY = timedelta(days=1)
 ONE_HOUR = timedelta(hours=1)
-SHIFT_MINUTE = '30'
-MONTH_FMT = '{}-{:02}-01 06:%s:00'
-DAY_FMT = '%Y-%m-%d 06:{}:00'
-HOUR_FMT = '%Y-%m-%d %H:{}:00'
+SHIFT_MINUTE = "30"
+MONTH_FMT = "{}-{:02}-01 06:%s:00"
+DAY_FMT = "%Y-%m-%d 06:{}:00"
+HOUR_FMT = "%Y-%m-%d %H:{}:00"
 
 # folder name format for day
-FOLDER_DAY_FMT = '%Y%m%d'
+FOLDER_DAY_FMT = "%Y%m%d"
 
 # folder name format for hour
-FOLDER_HOUR_FMT = '%Y%m%d%H'
-QUARTERS = ['Q1 (Nov ~ Jan)', 'Q2 (Feb ~ Apr)', 'Q3 (May ~ Jul)',
-            'Q4 (Aug ~ Oct)']
-MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep',
-               'Oct', 'Nov', 'Dec']
-WEEK_LIST = [('{}'.format(i), 'WWK{}'.format(i)) for i in range(1, 53)]
+FOLDER_HOUR_FMT = "%Y%m%d%H"
+QUARTERS = [
+    "Q1 (Nov ~ Jan)",
+    "Q2 (Feb ~ Apr)",
+    "Q3 (May ~ Jul)",
+    "Q4 (Aug ~ Oct)",
+]
+MONTH_NAMES = [
+    "Jan",
+    "Feb",
+    "Mar",
+    "Apr",
+    "May",
+    "Jun",
+    "Jul",
+    "Aug",
+    "Sep",
+    "Oct",
+    "Nov",
+    "Dec",
+]
+WEEK_LIST = [("{}".format(i), "WWK{}".format(i)) for i in range(1, 53)]
+MONDAY = calendar.MONDAY
+SUNDAY = calendar.SUNDAY
 
 
 class JshDate(object):
-    def __init__(self, **kwargs):
-        self.shift_minute = kwargs.get('shift_minute', SHIFT_MINUTE)
+    weeks_map = {}
 
-        month_fmt = kwargs.get('month_fmt', MONTH_FMT)
+    def __init__(self, **kwargs):
+        self.shift_minute = kwargs.get("shift_minute", SHIFT_MINUTE)
+
+        month_fmt = kwargs.get("month_fmt", MONTH_FMT)
         self.month_fmt = month_fmt % self.shift_minute
 
-        day_fmt = kwargs.get('day_fmt', DAY_FMT)
+        day_fmt = kwargs.get("day_fmt", DAY_FMT)
         self.day_fmt = day_fmt.format(self.shift_minute)
 
-        hour_fmt = kwargs.get('hour_fmt', HOUR_FMT)
+        hour_fmt = kwargs.get("hour_fmt", HOUR_FMT)
         self.hour_fmt = hour_fmt.format(self.shift_minute)
 
-        self.folder_day_fmt = kwargs.get('folder_day_fmt', FOLDER_DAY_FMT)
-        self.folder_hour_fmt = kwargs.get('folder_hour_fmt', FOLDER_HOUR_FMT)
+        self.folder_day_fmt = kwargs.get("folder_day_fmt", FOLDER_DAY_FMT)
+        self.folder_hour_fmt = kwargs.get("folder_hour_fmt", FOLDER_HOUR_FMT)
 
     def get_quarter_by_month(self, month):
         if month in (11, 12, 1):
@@ -55,11 +80,11 @@ class JshDate(object):
     def get_current_quarter(self):
         return self.get_quarter_by_month(datetime.now().month)
 
-    def get_year_chart_ticks(self, seqs=[], kind='quarter'):
-        if kind == 'quarter':
+    def get_year_chart_ticks(self, seqs=[], kind="quarter"):
+        if kind == "quarter":
             return [QUARTERS[i] for i, _ in enumerate(seqs)]
 
-        return [parse(seq[0]).strftime('%Y-%b') for seq in seqs]
+        return [parse(seq[0]).strftime("%Y-%b") for seq in seqs]
 
     def get_year_ticks(self, year, month=0, quarter=0):
         # Month view and Quarter View
@@ -68,12 +93,12 @@ class JshDate(object):
         # Q3: May ~ Jul, Q4: Aug ~ Oct
         year = int(year)
         now = datetime.now()
-        now_str = now.strftime('%Y%m')
-        y_str = '{}'.format(year)
+        now_str = now.strftime("%Y%m")
+        y_str = "{}".format(year)
         month_ticks = []
         qt_ticks = []
         if month:
-            if '{}{:02}'.format(year, month) > now_str:
+            if "{}{:02}".format(year, month) > now_str:
                 return [], []
 
             if month == 11:
@@ -94,13 +119,13 @@ class JshDate(object):
             if quarter == 1 and year <= now.year:
                 ts1 = self.month_fmt.format(year - 1, 11)
                 ts2 = self.month_fmt.format(year, 2)
-            elif quarter == 2 and now_str >= (y_str + '02'):
+            elif quarter == 2 and now_str >= (y_str + "02"):
                 ts1 = self.month_fmt.format(year, 2)
                 ts2 = self.month_fmt.format(year, 5)
-            elif quarter == 3 and now_str >= (y_str + '05'):
+            elif quarter == 3 and now_str >= (y_str + "05"):
                 ts1 = self.month_fmt.format(year, 5)
                 ts2 = self.month_fmt.format(year, 8)
-            elif quarter == 4 and now_str >= (y_str + '08'):
+            elif quarter == 4 and now_str >= (y_str + "08"):
                 ts1 = self.month_fmt.format(year, 8)
                 ts2 = self.month_fmt.format(year, 10)
             else:
@@ -109,39 +134,56 @@ class JshDate(object):
             qt_ticks.append((ts1, ts2, quarter))
 
         if not (month or quarter):
-            now_str = now.strftime('%Y%m')
+            now_str = now.strftime("%Y%m")
             last_year = year - 1
-            month_ticks = [(self.month_fmt.format(last_year, 11),
-                           self.month_fmt.format(last_year, 12),
-                           11),
-                           (self.month_fmt.format(last_year, 12),
-                           self.month_fmt.format(year, 1),
-                           12),
-                           ]
+            month_ticks = [
+                (
+                    self.month_fmt.format(last_year, 11),
+                    self.month_fmt.format(last_year, 12),
+                    11,
+                ),
+                (
+                    self.month_fmt.format(last_year, 12),
+                    self.month_fmt.format(year, 1),
+                    12,
+                ),
+            ]
 
             for i in range(1, 11):
-                if now_str < '{}{:02}'.format(year, i):
+                if now_str < "{}{:02}".format(year, i):
                     break
 
-                month_ticks.append((self.month_fmt.format(year, i),
-                                   self.month_fmt.format(year, i + 1),
-                                   i))
+                month_ticks.append(
+                    (
+                        self.month_fmt.format(year, i),
+                        self.month_fmt.format(year, i + 1),
+                        i,
+                    )
+                )
 
-            qt_ticks = [(self.month_fmt.format(last_year, 11),
-                         self.month_fmt.format(year, 2),
-                         1)]
+            qt_ticks = [
+                (
+                    self.month_fmt.format(last_year, 11),
+                    self.month_fmt.format(year, 2),
+                    1,
+                )
+            ]
             for i, q in enumerate((2, 5, 8)):
-                if now_str < '{}{:02}'.format(year, q):
+                if now_str < "{}{:02}".format(year, q):
                     break
 
-                qt_ticks.append((self.month_fmt.format(year, q),
-                                 self.month_fmt.format(year, q + 3),
-                                 i + 2))
+                qt_ticks.append(
+                    (
+                        self.month_fmt.format(year, q),
+                        self.month_fmt.format(year, q + 3),
+                        i + 2,
+                    )
+                )
 
         return month_ticks, qt_ticks
 
     def get_quarter_chart_ticks(self, seqs):
-        return [parse(seq[0]).strftime('%Y-%b')for seq in seqs]
+        return [parse(seq[0]).strftime("%Y-%b") for seq in seqs]
 
     def get_quarter_ticks(self, year, quarter):
         # Q1: Nov ~ Jan, Q2: Feb ~ Apr
@@ -150,48 +192,72 @@ class JshDate(object):
         quarter = int(quarter)
         ticks = []
         now = datetime.now()
-        now_str = now.strftime('%Y%m')
-        year_str = '{}'.format(year)
+        now_str = now.strftime("%Y%m")
+        year_str = "{}".format(year)
         if quarter == 1 and year <= now.year:
-            ticks.append((self.month_fmt.format(year - 1, 11),
-                          self.month_fmt.format(year - 1, 12),
-                          11))
-            ticks.append((self.month_fmt.format(year - 1, 12),
-                          self.month_fmt.format(year, 1),
-                          12))
-            ticks.append((self.month_fmt.format(year, 1),
-                          self.month_fmt.format(year, 2),
-                          1))
-        elif quarter == 2 and now_str >= (year_str + '02'):
+            ticks.append(
+                (
+                    self.month_fmt.format(year - 1, 11),
+                    self.month_fmt.format(year - 1, 12),
+                    11,
+                )
+            )
+            ticks.append(
+                (
+                    self.month_fmt.format(year - 1, 12),
+                    self.month_fmt.format(year, 1),
+                    12,
+                )
+            )
+            ticks.append(
+                (
+                    self.month_fmt.format(year, 1),
+                    self.month_fmt.format(year, 2),
+                    1,
+                )
+            )
+        elif quarter == 2 and now_str >= (year_str + "02"):
             for m in (2, 3, 4):
-                if now_str < (year_str + '0{}'.format(m)):
+                if now_str < (year_str + "0{}".format(m)):
                     break
 
-                ticks.append((self.month_fmt.format(year, m),
-                              self.month_fmt.format(year, m + 1),
-                              m))
+                ticks.append(
+                    (
+                        self.month_fmt.format(year, m),
+                        self.month_fmt.format(year, m + 1),
+                        m,
+                    )
+                )
 
-        elif quarter == 3 and now_str >= (year_str + '05'):
+        elif quarter == 3 and now_str >= (year_str + "05"):
             for m in (5, 6, 7):
-                if now_str < (year_str + '0{}'.format(m)):
+                if now_str < (year_str + "0{}".format(m)):
                     break
 
-                ticks.append((self.month_fmt.format(year, m),
-                              self.month_fmt.format(year, m + 1),
-                              m))
-        elif quarter == 4 and now_str >= (year_str + '08'):
+                ticks.append(
+                    (
+                        self.month_fmt.format(year, m),
+                        self.month_fmt.format(year, m + 1),
+                        m,
+                    )
+                )
+        elif quarter == 4 and now_str >= (year_str + "08"):
             for m in (8, 9, 10):
-                if now_str < (year_str + '0{}'.format(m)):
+                if now_str < (year_str + "0{}".format(m)):
                     break
 
-                ticks.append((self.month_fmt.format(year, m),
-                              self.month_fmt.format(year, m + 1),
-                              m))
+                ticks.append(
+                    (
+                        self.month_fmt.format(year, m),
+                        self.month_fmt.format(year, m + 1),
+                        m,
+                    )
+                )
 
         return ticks
 
     def get_month_day_chart_ticks(self, seqs):
-        return [parse(d[0]).strftime('%b-%d') for d in seqs]
+        return [parse(d[0]).strftime("%b-%d") for d in seqs]
 
     def get_month_day_ticks(self, year, month):
         ticks = []
@@ -203,10 +269,13 @@ class JshDate(object):
             if dt.strftime(self.folder_day_fmt) > day_str:
                 break
 
-            ticks.append((dt.strftime(self.day_fmt),
-                          (dt + ONE_DAY).strftime(self.day_fmt),
-                          dt.strftime(self.folder_day_fmt),
-                          ))
+            ticks.append(
+                (
+                    dt.strftime(self.day_fmt),
+                    (dt + ONE_DAY).strftime(self.day_fmt),
+                    dt.strftime(self.folder_day_fmt),
+                )
+            )
             dt += ONE_DAY
             if dt.month != month:
                 break
@@ -214,7 +283,7 @@ class JshDate(object):
         return ticks
 
     def get_week_chart_ticks(self, days=[]):
-        return [parse(d[0]).strftime('%Y-%b-%d') for d in days]
+        return [parse(d[0]).strftime("%Y-%b-%d") for d in days]
 
     def get_week_ticks(self, year, week):
         ticks = []
@@ -226,9 +295,13 @@ class JshDate(object):
             if dt.strftime(self.folder_day_fmt) > day_str:
                 break
 
-            ticks.append((dt.strftime(self.day_fmt),
-                          (dt + ONE_DAY).strftime(self.day_fmt),
-                          dt.strftime(self.folder_day_fmt)))
+            ticks.append(
+                (
+                    dt.strftime(self.day_fmt),
+                    (dt + ONE_DAY).strftime(self.day_fmt),
+                    dt.strftime(self.folder_day_fmt),
+                )
+            )
             dt += ONE_DAY
 
         return ticks
@@ -238,29 +311,33 @@ class JshDate(object):
         for seq in seqs:
             dt = parse(seq[0])
             if dt.hour == 0:
-                fmt = '%b-%d 00:{}'.format(self.shift_minute)
+                fmt = "%b-%d 00:{}".format(self.shift_minute)
                 ticks.append(dt.strftime(fmt))
             else:
-                ticks.append(dt.strftime('%H:{}'.format(self.shift_minute)))
+                ticks.append(dt.strftime("%H:{}".format(self.shift_minute)))
 
         return ticks
 
     def get_day_ticks(self, day):
         ticks = []
-        if isinstance(day, basestring):
+        if isinstance(day, six.string_types):
             day = parse(day)
 
         day = day.replace(hour=6)
         now = datetime.now()
-        fmt = '{}{:>02}'.format(self.folder_hour_fmt, self.shift_minute)
-        hour_str = now.strftime('{}%M'.format(self.folder_hour_fmt))
+        fmt = "{}{:>02}".format(self.folder_hour_fmt, self.shift_minute)
+        hour_str = now.strftime("{}%M".format(self.folder_hour_fmt))
         for h in range(24):
             if day.strftime(fmt) > hour_str:
                 break
 
-            ticks.append((day.strftime(self.hour_fmt),
-                          (day + ONE_HOUR).strftime(self.hour_fmt),
-                          day.hour))
+            ticks.append(
+                (
+                    day.strftime(self.hour_fmt),
+                    (day + ONE_HOUR).strftime(self.hour_fmt),
+                    day.hour,
+                )
+            )
             day += ONE_HOUR
 
         return ticks
@@ -272,21 +349,21 @@ class JshDate(object):
         else:
             qt = 4
 
-        return [('{}'.format(i + 1), QUARTERS[i]) for i in range(qt)]
+        return [("{}".format(i + 1), QUARTERS[i]) for i in range(qt)]
 
     def get_month_choices(self, year=None):
         now = datetime.now()
         if not year or int(year) >= now.year:
-            months = MONTH_NAMES[:now.month]
+            months = MONTH_NAMES[: now.month]
         else:
             months = MONTH_NAMES[:]
 
-        return [('{}'.format(i + 1), m) for i, m in enumerate(months)]
+        return [("{}".format(i + 1), m) for i, m in enumerate(months)]
 
     def get_week_choices(self, year=None):
         now = datetime.now()
         if not year or int(year) >= now.year:
-            week = int(now.strftime('%W'))
+            week = int(now.strftime("%W"))
             if week == 53:
                 week = 52
 
@@ -300,3 +377,59 @@ class JshDate(object):
             return WEEK_LIST[:week]
 
         return WEEK_LIST[:]
+
+    @classmethod
+    def get_week_dates(cls, year, week, first_day=MONDAY):
+        year, week, first_day = int(year), int(week), int(first_day)
+        if (week > 52) or not (MONDAY <= first_day <= SUNDAY):
+            return []
+
+        if (year not in cls.weeks_map) or (
+            first_day not in cls.weeks_map[year]
+        ):
+            # generate week dates of the year
+            dates = dict(weeks={}, days={})
+            weeks = []
+            cal = calendar.Calendar(first_day)
+            for qur_date in cal.yeardatescalendar(year):
+                for mon_date in qur_date:
+                    for week_date in mon_date:
+                        if week_date in weeks:
+                            continue
+
+                        if len(weeks) == 52:
+                            break
+
+                        weeks.append(week_date)
+                        dates["weeks"][len(weeks)] = week_date
+                        for day in week_date:
+                            dates["days"][day.strftime("%Y%m%d")] = len(weeks)
+
+            cls.weeks_map[year] = {first_day: dates}
+
+        return cls.weeks_map[year][first_day]["weeks"][week]
+
+    @classmethod
+    def get_date_week(cls, day, first_day=MONDAY):
+        if not (MONDAY <= first_day <= SUNDAY):
+            return -1, -1
+
+        if isinstance(day, six.string_types):
+            day = parse(day)
+
+        day_str = day.strftime("%Y%m%d")
+        cls.get_week_dates(day.year, 1, first_day)
+        week = cls.weeks_map[day.year][first_day]["days"].get(day_str)
+        if week:
+            return day.year, week
+
+        cls.get_week_dates(day.year + 1, 1, first_day)
+        week = cls.weeks_map[day.year + 1][first_day]["days"].get(day_str)
+        if week:
+            return day.year + 1, week
+
+        return -1, -1
+
+    @classmethod
+    def get_day_week(cls, day, first_day=MONDAY):
+        return cls.get_date_week(day, first_day)
